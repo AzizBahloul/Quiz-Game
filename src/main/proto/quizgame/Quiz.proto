@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package quizgame;
+
+option java_package = "com.exemple.quizgame.proto";
+option java_multiple_files = true;
+
+service QuizGame {
+    rpc RegisterPlayer(RegisterPlayerRequest) returns (RegisterPlayerResponse);
+    rpc GetQuiz(GetQuizRequest) returns (GetQuizResponse);
+    rpc GetQuestion(GetQuestionRequest) returns (GetQuestionResponse);
+    rpc Play(PlayRequest) returns (PlayResponse);
+    rpc GetPlayerScores(GetPlayerScoresRequest) returns (GetPlayerScoresResponse);
+}
+
+message Quiz {
+    int32 id = 1;
+    string question = 2;
+    string answer1 = 3;
+    string answer2 = 4;
+    string answer3 = 5;
+    string answer4 = 6;
+    int32 correctAnswer = 7;
+}
+
+message Player {
+    string playerName = 1;
+    int32 score = 2;
+}
+
+message RegisterPlayerRequest {
+    string playerName = 1;
+}
+
+message RegisterPlayerResponse {
+    Player player = 1;
+}
+
+message GetQuizRequest {}
+
+message GetQuizResponse {
+    repeated Quiz quiz = 1;
+}
+
+message GetQuestionRequest {
+    int32 quizId = 1;
+}
+
+message GetQuestionResponse {
+    Quiz quiz = 1;
+}
+
+message PlayRequest {
+    string playerName = 1;
+    int32 quizId = 2;
+    int32 answer = 3;
+}
+
+message PlayResponse {
+    Player player = 1;
+    int32 correctAnswer = 2;
+}
+
+message GetPlayerScoresRequest {}
+
+message GetPlayerScoresResponse {
+    repeated Player players = 1;
+}
