@@ -118,7 +118,7 @@ public class QuizGameApp extends Application {
         // Read and display ASCII art
         String asciiArt = "";
         try {
-            asciiArt = new String(Files.readAllBytes(Paths.get("/home/siaziz/Desktop/jee/quizgame/ascii_art_fixed.txt")));
+            asciiArt = new String(Files.readAllBytes(Paths.get("ascii_art_fixed.txt")));
         } catch (IOException e) {
             e.printStackTrace();
         }
