@@ -3,18 +3,22 @@ package com.example.quizgame.client;
 import com.exemple.quizgame.proto.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import javafx.animation.FadeTransition;
+import javafx.animation.*;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.application.Platform;
 import javafx.util.Duration;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 public class QuizGameApp extends Application {
     private QuizGameGrpc.QuizGameBlockingStub stub;
@@ -22,30 +26,88 @@ public class QuizGameApp extends Application {
     private Quiz currentQuiz;
     private int currentQuestionIndex = 0;
     private GetQuizResponse quizResponse;
+    
+    // Define theme colors
+    private static final String DARK_BACKGROUND = "#1E1E1E";
+    private static final String SECONDARY_DARK = "#252526";
+    private static final String ACCENT_BLUE = "#007ACC";
+    private static final String TEXT_COLOR = "#FFFFFF";
+    private static final String HOVER_BLUE = "#0098FF";
+
+    private void applyDarkTheme(Scene scene) {
+        String css = getClass().getResource("/styles.css").toExternalForm();
+        scene.getStylesheets().add(css);
+        scene.setFill(javafx.scene.paint.Color.valueOf(DARK_BACKGROUND));
+    }
+
+    private void styleControl(Control control) {
+        if (control instanceof Button) {
+            control.setStyle(
+                "-fx-background-color: " + ACCENT_BLUE + ";" +
+                "-fx-text-fill: " + TEXT_COLOR + ";" +
+                "-fx-font-size: 14px;"
+            );
+        } else if (control instanceof TextField) {
+            control.setStyle(
+                "-fx-background-color: " + SECONDARY_DARK + ";" +
+                "-fx-text-fill: " + TEXT_COLOR + ";" +
+                "-fx-border-color: " + ACCENT_BLUE + ";" +
+                "-fx-border-radius: 3px;"
+            );
+        } else if (control instanceof Label) {
+            control.setStyle(
+                "-fx-text-fill: " + TEXT_COLOR + ";"
+            );
+        } else if (control instanceof RadioButton) {
+            control.setStyle(
+                "-fx-text-fill: " + TEXT_COLOR + ";"
+            );
+        }
+    }
+
+    private void applyEntranceAnimation(Node control) {
+        // Slide and fade in with updated colors
+        TranslateTransition translate = new TranslateTransition(Duration.millis(1000), control);
+        translate.setFromX(-50);
+        translate.setToX(0);
+
+        FadeTransition fade = new FadeTransition(Duration.millis(1000), control);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+
+        ScaleTransition scale = new ScaleTransition(Duration.millis(1000), control);
+        scale.setFromX(0.8);
+        scale.setFromY(0.8);
+        scale.setToX(1);
+        scale.setToY(1);
+
+        ParallelTransition parallel = new ParallelTransition(translate, fade, scale);
+        parallel.play();
+    }
 
     @Override
     public void start(Stage primaryStage) {
-        // Initialize gRPC channel and stub
         ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
                 .usePlaintext()
                 .build();
         stub = QuizGameGrpc.newBlockingStub(channel);
 
-        // Create the main layout
         VBox mainLayout = new VBox(20);
         mainLayout.setPadding(new Insets(20));
         mainLayout.setAlignment(Pos.CENTER);
+        mainLayout.setStyle("-fx-background-color: " + DARK_BACKGROUND + ";");
 
-        // Player registration section
-        showPlayerRegistration(mainLayout, primaryStage);
-
-        // Set up the primary stage
         Scene scene = new Scene(mainLayout, 600, 400);
+        applyDarkTheme(scene);
+        
         primaryStage.setTitle("Quiz Game");
         primaryStage.setScene(scene);
+        primaryStage.setFullScreen(true); // Set the window to full screen
+        primaryStage.setFullScreenExitHint(""); // Remove the full screen exit hint
         primaryStage.show();
 
-        // Handle cleanup when the window is closed
+        showPlayerRegistration(mainLayout, primaryStage);
+
         primaryStage.setOnCloseRequest(e -> {
             channel.shutdown();
             Platform.exit();
@@ -53,15 +115,30 @@ public class QuizGameApp extends Application {
     }
 
     private void showPlayerRegistration(VBox mainLayout, Stage primaryStage) {
+        // Read and display ASCII art
+        String asciiArt = "";
+        try {
+            asciiArt = new String(Files.readAllBytes(Paths.get("/home/siaziz/Desktop/jee/quizgame/ascii_art_fixed.txt")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Label asciiLabel = new Label(asciiArt);
+        asciiLabel.setStyle("-fx-font-family: monospace; -fx-font-size: 8px; -fx-text-fill: " + TEXT_COLOR + ";");
+        
+        // Apply entrance animation to ASCII art
+        applyEntranceAnimation(asciiLabel);
+
         Label titleLabel = new Label("Welcome to Quiz Game!");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
 
         TextField playerNameField = new TextField();
         playerNameField.setPromptText("Enter your name");
         playerNameField.setMaxWidth(200);
+        styleControl(playerNameField);
 
         Button startButton = new Button("Start Game");
-        startButton.setStyle("-fx-font-size: 16px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+        styleControl(startButton);
         startButton.setOnAction(e -> {
             String playerName = playerNameField.getText().trim();
             if (!playerName.isEmpty()) {
@@ -80,7 +157,13 @@ public class QuizGameApp extends Application {
         // Handle Enter key press for player name field
         playerNameField.setOnAction(e -> startButton.fire());
 
-        mainLayout.getChildren().addAll(titleLabel, playerNameField, startButton);
+        // Add components to layout
+        mainLayout.getChildren().addAll(asciiLabel, titleLabel, playerNameField, startButton);
+
+        // Apply entrance animations to all components
+        applyEntranceAnimation(titleLabel);
+        applyEntranceAnimation(playerNameField);
+        applyEntranceAnimation(startButton);
     }
 
     private void loadQuizzes(VBox mainLayout, Stage primaryStage) {
@@ -106,10 +189,10 @@ public class QuizGameApp extends Application {
 
         // Question display
         Label questionLabel = new Label("Question " + (currentQuestionIndex + 1) + "/" + quizResponse.getQuizCount());
-        questionLabel.setStyle("-fx-font-size: 18px;");
+        questionLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: " + TEXT_COLOR + ";");
         Label questionText = new Label(currentQuiz.getQuestion());
         questionText.setWrapText(true);
-        questionText.setStyle("-fx-font-size: 16px;");
+        questionText.setStyle("-fx-font-size: 16px; -fx-text-fill: " + TEXT_COLOR + ";");
 
         // Answer options
         ToggleGroup answerGroup = new ToggleGroup();
@@ -123,12 +206,13 @@ public class QuizGameApp extends Application {
 
         for (RadioButton rb : answerButtons) {
             rb.setToggleGroup(answerGroup);
+            styleControl(rb);
             answersBox.getChildren().add(rb);
         }
 
         // Submit button
         Button submitButton = new Button("Submit Answer");
-        submitButton.setStyle("-fx-font-size: 16px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+        styleControl(submitButton);
         submitButton.setOnAction(e -> {
             RadioButton selectedButton = (RadioButton) answerGroup.getSelectedToggle();
             if (selectedButton != null) {
@@ -145,6 +229,12 @@ public class QuizGameApp extends Application {
         }
 
         mainLayout.getChildren().addAll(questionLabel, questionText, answersBox, submitButton);
+
+        // Apply entrance animations to all components
+        applyEntranceAnimation(questionLabel);
+        applyEntranceAnimation(questionText);
+        applyEntranceAnimation(answersBox);
+        applyEntranceAnimation(submitButton);
     }
 
     private void submitAnswer(int answer, VBox mainLayout, Stage primaryStage) {
@@ -177,7 +267,7 @@ public class QuizGameApp extends Application {
         fadeTransition.play();
 
         Button nextButton = new Button("Next Question");
-        nextButton.setStyle("-fx-font-size: 16px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+        styleControl(nextButton);
         nextButton.setOnAction(e -> {
             currentQuestionIndex++;
             if (currentQuestionIndex < quizResponse.getQuizCount()) {
@@ -189,9 +279,15 @@ public class QuizGameApp extends Application {
 
         // Add progress bar
         ProgressBar progressBar = new ProgressBar((double) currentQuestionIndex / quizResponse.getQuizCount());
-        progressBar.setStyle("-fx-accent: #4CAF50;");
+        progressBar.setStyle("-fx-accent: " + ACCENT_BLUE + ";");
 
         mainLayout.getChildren().addAll(resultLabel, progressBar, nextButton);
+
+        // Add fade transition for the entire layout
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(500), mainLayout);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+        fadeIn.play();
     }
 
     private void showFinalScore(VBox mainLayout) {
@@ -202,22 +298,28 @@ public class QuizGameApp extends Application {
             GetPlayerScoresResponse scoresResponse = stub.getPlayerScores(scoresRequest);
 
             Label finalLabel = new Label("Quiz Completed!");
-            finalLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+            finalLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
 
             VBox scoresBox = new VBox(10);
             scoresBox.setAlignment(Pos.CENTER);
 
             for (Player player : scoresResponse.getPlayersList()) {
                 Label scoreLabel = new Label(player.getPlayerName() + ": " + player.getScore() + " points");
-                scoreLabel.setStyle("-fx-font-size: 16px;");
+                scoreLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: " + TEXT_COLOR + ";");
                 scoresBox.getChildren().add(scoreLabel);
             }
 
             Button exitButton = new Button("Exit Game");
-            exitButton.setStyle("-fx-font-size: 16px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+            styleControl(exitButton);
             exitButton.setOnAction(e -> Platform.exit());
 
             mainLayout.getChildren().addAll(finalLabel, scoresBox, exitButton);
+
+            // Add fade transition for the entire layout
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), mainLayout);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.play();
         } catch (Exception e) {
             showError("Error", "Failed to load final scores: " + e.getMessage());
         }

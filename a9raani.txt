@@ -1,0 +1,2 @@
+mvn javafx:run
+mvn exec:java -Dexec.mainClass="com.example.quizgame.server.QuizGameServer"
